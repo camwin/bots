@@ -100,23 +100,6 @@ def SpawnKillCheck(self,game):
     if game.turn % 10 in [8, 9, 0] and 'spawn' in rg.loc_types(self.location) and game.turn < 95:
         return True
 
-# I love being a turtle!
-def TurtleMode(self,game):
-    for loc,bot in game.robots.items():
-        if bot.player_id == self.player_id:
-            if self.hp < 15:
-                if rg.wdist(loc, GetClosestEnemy(self)) == 1:
-                    if rg.wdist(loc, GetClosestFriendly(self)) > 1:
-                        print "Bot at %d %d entered turtle mode" %self.location
-                        return True
-
-#TODO Add 'stick-and-move' attack prediction/evasion
-#1) Determine closest enemy
-#2) Determine probable next move (assuming he's after you)
-    #a. Of closest enemy's available moves, determine which is closest walking distance
-#3) Attack that square
-#4) Optional: Move away
-
 def TheForce(self,game,myLoc, enemyLoc):
     possibleMoves = []
     bestPrediction = 0
@@ -126,6 +109,16 @@ def TheForce(self,game,myLoc, enemyLoc):
         if rg.wdist(self.location, loc) < bestMoveSoFar:
             bestPrediction = loc
     return bestPrediction
+
+# I love being a turtle!
+def TurtleMode(self,game):
+    for loc,bot in game.robots.items():
+        if bot.player_id == self.player_id:
+            if self.hp < 15:
+                if rg.wdist(loc, GetClosestEnemy(self)) == 1:
+                    if rg.wdist(loc, GetClosestFriendly(self)) > 1:
+                        print "Bot at %d %d entered turtle mode" %self.location
+                        return True
 
 class Robot:
     botSuicide = 0
