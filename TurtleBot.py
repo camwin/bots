@@ -1,6 +1,5 @@
 import rg, random
 
-#TODO Make bots more efficient killers - Redo attack closest enemy
 
 # That's me in the corner...
 def ClosestCorner(self,game):
@@ -71,7 +70,11 @@ def GetClosestFriendly(self):
                 #print "Friend = %d" %self.closestFriend
     return self.closestFriend
 
+#TODO Port version of Shortest Path First algorithm
+def GetSPF(self,game):
+    return True
 
+# Run away!!!
 def ItsNotWorthItBro(self,game):
     for loc,bot in game.robots.items():
         if bot.player_id == self.player_id:
@@ -92,6 +95,11 @@ def listOfGoodMoves(loc):
 def SuicideStats(self,stat):
     print "%d bots died honorably" %stat
 
+#Check to see if bot is in spawn and spawn-turn coming up.
+def SpawnKillCheck(self,game):
+    if game.turn % 10 in [8, 9, 0] and 'spawn' in rg.loc_types(self.location) and game.turn < 95:
+        return True
+
 # I love being a turtle!
 def TurtleMode(self,game):
     for loc,bot in game.robots.items():
@@ -102,14 +110,22 @@ def TurtleMode(self,game):
                         print "Bot at %d %d entered turtle mode" %self.location
                         return True
 
-def GetSPF(self,game):
-    return True
+#TODO Add 'stick-and-move' attack prediction/evasion
+#1) Determine closest enemy
+#2) Determine probable next move (assuming he's after you)
+    #a. Of closest enemy's available moves, determine which is closest walking distance
+#3) Attack that square
+#4) Optional: Move away
 
-#Check to see if bot is in spawn and spawn-turn coming up.
-def SpawnKillCheck(self,game):
-    if game.turn % 10 in [8, 9, 0] and 'spawn' in rg.loc_types(self.location) and game.turn < 95:
-        return True
-
+def TheForce(self,game,myLoc, enemyLoc):
+    possibleMoves = []
+    bestPrediction = 0
+    bestMoveSoFar = 100
+    possibleMoves = listOfGoodMoves(enemyLoc)
+    for loc in possibleMoves:
+        if rg.wdist(self.location, loc) < bestMoveSoFar:
+            bestPrediction = loc
+    return bestPrediction
 
 class Robot:
     botSuicide = 0
@@ -124,34 +140,35 @@ class Robot:
 
         ####### Actions Prioritized Highest to Lowest #######
 
-        #Move to center right off the bat
-        #if game.turn <= 5:
-         #   if IsCenterAvailable(self,game):
-          #     print "Moving toward center"
-           #    return ['move', rg.toward(self.location, rg.CENTER_POINT)]
-
         #If spawn turn coming up, try to go to Center
         if SpawnKillCheck(self,game):
-            print "Dont spawn kill me, bro!"
+            print "Don't spawn kill me, bro!"
             return ['move', rg.toward(self.location, rg.CENTER_POINT)]
 
         #If low on health and close to enemy, suicide
         if HonorableDeath(self, game):
             return ['suicide']
 
-        #if ItsNotWorthItBro(self,game):
-         #   print "Limping to: " ClosestCorner(self,game)
-          #  return ['move', rg.toward(self.location, ClosestCorner(self,game))]
-
         if TurtleMode(self,game):
             print "Don't hurt me, bro!"
             return ['guard']
+
+        #If you think an enemy might move adjacent, attack the square
 
         #If an enemy is close, Attack
         #print "self.location, GetClosestEnemy", self.location, " ", GetClosestEnemy(self)
         if rg.wdist(self.location, GetClosestEnemy(self)) == 1:
             return ['attack', GetClosestEnemy(self)]
-        
+
+        # Get 1 square away from enemy, then attack square that enemy may move to.
+        # Determine if enemy is 2 paces away (i.e., one pace before striking distance)
+        # space-cadet, with prediction - 15-5, 12-6 | Without 10-3, 10-3
+        # StarBot with - 18-8, 18-8| Without 11-4, 17-2
+        if rg.wdist(self.location, GetClosestEnemy(self)) == 2:
+            #determine most probable move enemy will take toward you
+            print "Predicting enemy will move to  (%d %d)" %TheForce(self, game, self.location, GetClosestEnemy(self))
+            return ['attack', rg.toward(self.location, TheForce(self, game, self.location, GetClosestEnemy(self)))]
+
         #If an enemy is not close, move towards one, or just move towards center if obstacle in the way
         if rg.wdist(self.location, GetClosestEnemy(self)) > 1:
             if rg.toward(self.location, GetClosestEnemy(self)) in listOfGoodMoves(self.location):
