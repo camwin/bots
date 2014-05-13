@@ -70,10 +70,6 @@ def GetClosestFriendly(self):
                 #print "Friend = %d" %self.closestFriend
     return self.closestFriend
 
-#TODO Port version of Shortest Path First algorithm
-def GetSPF(self,game):
-    return True
-
 # Run away!!!
 def ItsNotWorthItBro(self,game):
     for loc,bot in game.robots.items():
@@ -100,6 +96,7 @@ def SpawnKillCheck(self,game):
     if game.turn % 10 in [8, 9, 0] and 'spawn' in rg.loc_types(self.location) and game.turn < 95:
         return True
 
+# Prediction method, returns a location that would be the shortest path between your bot and the closestEnemy
 def TheForce(self,game,myLoc, enemyLoc):
     possibleMoves = []
     bestPrediction = 0
