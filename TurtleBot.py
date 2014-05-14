@@ -165,8 +165,8 @@ class Robot:
             # first, check if move toward center is where an enemy is standing, SpinMove
             if ['move', rg.toward(self.location, rg.CENTER_POINT)] in self.enemyLocations:
                 print "Don't spawn kill me, bro!"
-                return ['move', rg.toward(self.location, SpinMove(rg.CENTER_POINT))]
-            # if move is clear, just move
+                return ['move', SpinMove(rg.toward(self.location, rg.CENTER_POINT))]
+            # if move is clear, just do it, bro
             else:
                 return ['move', rg.toward(self.location, rg.CENTER_POINT)]
 
@@ -177,8 +177,6 @@ class Robot:
         if TurtleMode(self,game):
             print "Don't hurt me, bro!"
             return ['guard']
-
-        #If you think an enemy might move adjacent, attack the square
 
         #If an enemy is close, Attack
         #print "self.location, GetClosestEnemy", self.location, " ", GetClosestEnemy(self)
@@ -191,7 +189,7 @@ class Robot:
         # StarBot with - 18-8, 18-8| Without 11-4, 17-2
         if rg.wdist(self.location, GetClosestEnemy(self)) == 2:
             #determine most probable move enemy will take toward you
-            print "Predicting enemy will move to  (%d %d)" %TheForce(self, game, self.location, GetClosestEnemy(self))
+            print "Predicting enemy will move to  (%d, %d)" %TheForce(self, game, self.location, GetClosestEnemy(self))
             return ['attack', rg.toward(self.location, TheForce(self, game, self.location, GetClosestEnemy(self)))]
 
         #If an enemy is not close, move towards one, or just move towards center if obstacle in the way
