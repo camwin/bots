@@ -91,10 +91,23 @@ def listOfGoodMoves(loc):
 def SuicideStats(self,stat):
     print "%d bots died honorably" %stat
 
+
+#TODO Get out of spawn better
 #Check to see if bot is in spawn and spawn-turn coming up.
 def SpawnKillCheck(self,game):
     if game.turn % 10 in [8, 9, 0] and 'spawn' in rg.loc_types(self.location) and game.turn < 95:
         return True
+
+# Method that converts a bad move into a good one (think spin-move around defender in football/basketball)
+def SpinMove(self,game,loc):
+    randomMoveMod = [-1, 1]
+    if self.location[0] == loc[0]:
+        juke = loc[0], loc[1]+random.choice(randomMoveMod)
+    else:
+        juke = loc[0]+random.choice(randomMoveMod), loc[1]
+    print "JUKED!"
+    return juke
+
 
 # Prediction method, returns a location that would be the shortest path between your bot and the closestEnemy
 def TheForce(self,game,myLoc, enemyLoc):
@@ -130,10 +143,14 @@ class Robot:
 
         ####### Actions Prioritized Highest to Lowest #######
 
-        #If spawn turn coming up, try to go to Center
+        # If spawn turn coming up, check if in spawn and make a good move toward center
+        #(Old) If spawn turn coming up, try to go to Center
         if SpawnKillCheck(self,game):
-            print "Don't spawn kill me, bro!"
-            return ['move', rg.toward(self.location, rg.CENTER_POINT)]
+            if ['move', rg.toward(self.location, rg.CENTER_POINT)] == 'obstacle':
+                print "Don't spawn kill me, bro!"
+                return ['move', rg.toward(self.location, SpinMove(rg.CENTER_POINT))]
+            else:
+                return ['move', rg.toward(self.location, rg.CENTER_POINT)]
 
         #If low on health and close to enemy, suicide
         if HonorableDeath(self, game):
@@ -162,11 +179,11 @@ class Robot:
         #If an enemy is not close, move towards one, or just move towards center if obstacle in the way
         if rg.wdist(self.location, GetClosestEnemy(self)) > 1:
             if rg.toward(self.location, GetClosestEnemy(self)) in listOfGoodMoves(self.location):
-                print "Moving toward (%d %d)" %GetClosestEnemy(self)
+                print "Moving toward %d %d" %GetClosestEnemy(self)
                 return ['move', rg.toward(self.location, GetClosestEnemy(self))]
             else:
                 if listOfGoodMoves(self.location)[0]:
-                    print "No good moves available. Moving to Center."
-                    return ['move', rg.toward(self.location, rg.CENTER_POINT)]
+                    return ['move', rg.toward(self.location, SpinMove(GetClosestEnemy(self)))]
+                    #old return ['move', rg.toward(self.location, rg.CENTER_POINT)]
         print "Nothing to do, guarding"
         return ['guard']
