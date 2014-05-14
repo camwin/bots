@@ -70,6 +70,15 @@ def GetClosestFriendly(self):
                 #print "Friend = %d" %self.closestFriend
     return self.closestFriend
 
+# Returns list of all enemy locations - Hat tip towards Khal Robo
+def EnemyLocations(self,game):
+    enemyLocs = []
+    for loc, bot in game.robots.items():
+        if bot.player_id != self.player_id:
+            enemyLocs += loc
+    #print enemyLocations
+    return enemyLocs
+
 # Run away!!!
 def ItsNotWorthItBro(self,game):
     for loc,bot in game.robots.items():
@@ -131,11 +140,18 @@ def TurtleMode(self,game):
                         return True
 
 class Robot:
+
     botSuicide = 0
     def act(self, game):
+
+        #Create list of enemy locations
+        self.enemyLocations = EnemyLocations(self,game)
+
+        #Initial vars for closestEnemy/Friend
         self.closestEnemy = (1000, 1000)
         self.closestFriend = (1000, 1000)
         self.game = game
+        #print EnemyLocations(self,game)
 
         ####### Print Stats #######
         if game.turn == 99:
@@ -146,9 +162,11 @@ class Robot:
         # If spawn turn coming up, check if in spawn and make a good move toward center
         #(Old) If spawn turn coming up, try to go to Center
         if SpawnKillCheck(self,game):
-            if ['move', rg.toward(self.location, rg.CENTER_POINT)] == 'obstacle':
+            # first, check if move toward center is where an enemy is standing, SpinMove
+            if ['move', rg.toward(self.location, rg.CENTER_POINT)] in self.enemyLocations:
                 print "Don't spawn kill me, bro!"
                 return ['move', rg.toward(self.location, SpinMove(rg.CENTER_POINT))]
+            # if move is clear, just move
             else:
                 return ['move', rg.toward(self.location, rg.CENTER_POINT)]
 
@@ -177,10 +195,13 @@ class Robot:
             return ['attack', rg.toward(self.location, TheForce(self, game, self.location, GetClosestEnemy(self)))]
 
         #If an enemy is not close, move towards one, or just move towards center if obstacle in the way
+        #check if enemy is more than one pace away
         if rg.wdist(self.location, GetClosestEnemy(self)) > 1:
+            #if step towards enemy is normal, make the move
             if rg.toward(self.location, GetClosestEnemy(self)) in listOfGoodMoves(self.location):
                 print "Moving toward %d %d" %GetClosestEnemy(self)
                 return ['move', rg.toward(self.location, GetClosestEnemy(self))]
+            #if step is invalid, or obstacle, SpinMove will modify it one way or the other.
             else:
                 if listOfGoodMoves(self.location)[0]:
                     return ['move', rg.toward(self.location, SpinMove(GetClosestEnemy(self)))]
