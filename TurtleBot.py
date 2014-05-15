@@ -61,7 +61,7 @@ def EnemyLocations(self,game):
     enemyLocs = []
     for loc, bot in game.robots.items():
         if bot.player_id != self.player_id:
-            enemyLocs += loc
+            enemyLocs.append(loc)
     #print enemyLocations
     return enemyLocs
 
@@ -70,7 +70,7 @@ def FriendlyLocations(self,game):
     friendlyLocs = []
     for loc, bot in game.robots.items():
         if bot.player_id == self.player_id:
-            friendlyLocs += loc
+            friendlyLocs.append(loc)
     #print friendlyLocs
     return friendlyLocs
 
@@ -103,13 +103,12 @@ def SpawnKillCheck(self,game):
         return True
 
 # Method that converts a bad move into a good one (think spin-move around defender in football/basketball)
-def SpinMove(self,game,loc):
+def SpinMove(self,loc):
     randomMoveMod = [-1, 1]
     if self.location[0] == loc[0]:
-        juke = loc[0], loc[1]+random.choice(randomMoveMod)
-    else:
         juke = loc[0]+random.choice(randomMoveMod), loc[1]
-    print "JUKED!"
+    else:
+        juke = loc[0], loc[1]+random.choice(randomMoveMod)
     return juke
 
 
@@ -159,17 +158,20 @@ class Robot:
         # If spawn turn coming up, check if in spawn and make a good move toward center
         #(Old) If spawn turn coming up, try to go to Center
         if SpawnKillCheck(self,game):
-            print "Trying to move toward center via:", ['move', rg.toward(self.location, rg.CENTER_POINT)]
-            print "Friendly List: ", self.friendlyLocations
-            print "Enemy List: ", self.enemyLocations
+
             # first, check if move toward center is where an enemy is standing, SpinMove
-            if ['move', rg.toward(self.location, rg.CENTER_POINT)] in self.enemyLocations:
-                print "Don't spawn kill me, bro!"
-                return ['move', SpinMove(rg.toward(self.location, rg.CENTER_POINT))]
+            if rg.toward(self.location, rg.CENTER_POINT) in self.enemyLocations:
+                jukeAroundEnemyFromSpawn = rg.toward(self.location,SpinMove(self,rg.toward(self.location, rg.CENTER_POINT)))
+                print "Enemy in the way, trying to juke to ", jukeAroundEnemyFromSpawn
+                if jukeAroundEnemyFromSpawn in self.enemyLocations:
+                    print "GET OFF ME BRO! Boxed in, attacking ", jukeAroundEnemyFromSpawn
+                    return ['attack', jukeAroundEnemyFromSpawn]
+                return ['move', jukeAroundEnemyFromSpawn]
             # next, check if move toward center is where a Friendly is standing, SpinMove
-            if ['move', rg.toward(self.location, rg.CENTER_POINT)] in self.friendlyLocations:
-                print "Don't spawn kill me, bro! (friendly juke)"
-                return ['move', SpinMove(rg.toward(self.location, rg.CENTER_POINT))]
+            if rg.toward(self.location, rg.CENTER_POINT) in self.friendlyLocations:
+                jukeAroundFriendlyFromSpawn = rg.toward(self.location,SpinMove(self,rg.toward(self.location, rg.CENTER_POINT)))
+                print "Friendly in the way, trying to juke to ", jukeAroundFriendlyFromSpawn
+                return ['move', jukeAroundFriendlyFromSpawn]
             # if move is clear, just do it, bro
             else:
                 print "Spawn coming up, dipping toward center from (%d, %d)" %self.location
@@ -208,7 +210,7 @@ class Robot:
             #if step is blocked by friendly, SpinMove will modify it one way or the other.
             else:
                 print "Friendly in the way, SpinMove around him at (%d, %d)" %rg.toward(self.location, GetClosestEnemy(self))
-                return ['move', SpinMove(rg.toward(self.location, GetClosestEnemy(self)))]
+                return ['move', rg.toward(self.location,SpinMove(self,rg.toward(self.location, GetClosestEnemy(self))))]
                 #old return ['move', rg.toward(self.location, rg.CENTER_POINT)]
         print "Nothing to do, guarding"
         return ['guard']
