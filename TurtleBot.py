@@ -1,28 +1,8 @@
 import rg, random
 
-
-# That's me in the corner...
-def ClosestCorner(self,game):
-    corner1 = 5, 3
-    corner2 = 5, 14
-    corner3 = 14, 5
-    corner4 = 14, 14
-
-
-    if rg.wdist(self.location, corner1) < rg.wdist(self.location, corner2):
-        if rg.wdist(self.location, corner1) < rg.wdist(self.location, corner3):
-            if rg.wdist(self.location, corner1) < rg.wdist(self.location, corner4):
-                return corner1
-    if rg.wdist(self.location, corner2) < rg.wdist(self.location, corner1):
-        if rg.wdist(self.location, corner2) < rg.wdist(self.location, corner3):
-            if rg.wdist(self.location, corner2) < rg.wdist(self.location, corner4):
-                return corner2
-    if rg.wdist(self.location, corner3) < rg.wdist(self.location, corner1):
-        if rg.wdist(self.location, corner3) < rg.wdist(self.location, corner2):
-            if rg.wdist(self.location, corner3) < rg.wdist(self.location, corner4):
-                return corner3
-    else:
-        return corner4
+#TODO
+# Figure out way to prevent more than one bot from locking up with an enemy. Derive way for
+# bots to gang up effectively.
 
 # Suicide, but only if its worth it, bro - Method borrowed from Khal Robo, borrowed from ExSpace
 def HonorableDeath(self, game):
@@ -79,15 +59,26 @@ def EnemyLocations(self,game):
     #print enemyLocations
     return enemyLocs
 
+# Returns list of all Friendly locations
+def FriendlyLocations(self,game):
+    FriendlyLocs = []
+    for loc, bot in game.robots.items():
+        if bot.player_id == self.player_id:
+            FriendlyLocs += loc
+    #print FriendlyLocations
+    return FriendlyLocs
+
 # Run away!!!
 def ItsNotWorthItBro(self,game):
-    for loc,bot in game.robots.items():
-        if bot.player_id == self.player_id:
-            if self.hp < 20:
-                if rg.wdist(loc, GetClosestEnemy(self)) <= 1:
-                    if rg.wdist(loc, GetClosestFriendly(self)) > 1:
-                        print "Just walk away bro, it's not worth it"
-                        return True
+    #for loc,bot in game.robots.items():
+    #    if bot.player_id == self.player_id:
+    if self.hp < 20:
+        if rg.wdist(self.location, GetClosestEnemy(self)) == 1:
+            if rg.wdist(self.location, GetClosestFriendly(self)) > 1:
+                print "Just walk away bro, it's not worth it (%d, %d)" %self.location
+                return True
+    else:
+        return False
 
 # Returns a list of adjacent areas
 def listOfGoodMoves(loc):
@@ -100,8 +91,6 @@ def listOfGoodMoves(loc):
 def SuicideStats(self,stat):
     print "%d bots died honorably" %stat
 
-
-#TODO Get out of spawn better
 #Check to see if bot is in spawn and spawn-turn coming up.
 def SpawnKillCheck(self,game):
     if game.turn % 10 in [8, 9, 0] and 'spawn' in rg.loc_types(self.location) and game.turn < 95:
@@ -133,7 +122,7 @@ def TheForce(self,game,myLoc, enemyLoc):
 def TurtleMode(self,game):
     for loc,bot in game.robots.items():
         if bot.player_id == self.player_id:
-            if self.hp < 15:
+            if self.hp < 10:
                 if rg.wdist(loc, GetClosestEnemy(self)) == 1:
                     if rg.wdist(loc, GetClosestFriendly(self)) > 1:
                         print "Bot at %d %d entered turtle mode" %self.location
@@ -146,6 +135,7 @@ class Robot:
 
         #Create list of enemy locations
         self.enemyLocations = EnemyLocations(self,game)
+        self.friendlyLocations = FriendlyLocations(self,game)
 
         #Initial vars for closestEnemy/Friend
         self.closestEnemy = (1000, 1000)
@@ -174,13 +164,14 @@ class Robot:
         if HonorableDeath(self, game):
             return ['suicide']
 
+        # if no buddy is near and health is below 10 (changed from 15 5-14-14), go to guarding
         if TurtleMode(self,game):
-            print "Don't hurt me, bro!"
+            print "Don't hurt me, bro! (%d, %d)" %self.location
             return ['guard']
 
-        #If an enemy is close, Attack
+        #If an enemy is close and it's worth it, bro (you have a buddy close), Attack. Otherwise, waddle away
         #print "self.location, GetClosestEnemy", self.location, " ", GetClosestEnemy(self)
-        if rg.wdist(self.location, GetClosestEnemy(self)) == 1:
+        if rg.wdist(self.location, GetClosestEnemy(self)) == 1: # ItsNotWorthItBro(self,game) == False:
             return ['attack', GetClosestEnemy(self)]
 
         # Get 1 square away from enemy, then attack square that enemy may move to.
@@ -192,7 +183,7 @@ class Robot:
             print "Predicting enemy will move to  (%d, %d)" %TheForce(self, game, self.location, GetClosestEnemy(self))
             return ['attack', rg.toward(self.location, TheForce(self, game, self.location, GetClosestEnemy(self)))]
 
-        #If an enemy is not close, move towards one, or just move towards center if obstacle in the way
+        #If an enemy is not close, move towards one
         #check if enemy is more than one pace away
         if rg.wdist(self.location, GetClosestEnemy(self)) > 1:
             #if step towards enemy is normal, make the move
