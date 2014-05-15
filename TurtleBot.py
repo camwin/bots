@@ -3,30 +3,17 @@ import rg, random
 #TODO
 # Figure out way to prevent more than one bot from locking up with an enemy. Derive way for
 # bots to gang up effectively.
+#   a. Make an 'engaged' list, that contains list of bots currently 'attacking' a square
+#       i. Have bots not close to enemies simply reference the closest friendly in engaged list then move to that closest enemy
 
 #TODO
 # DEBUG THIS --> Add check for Friendly's blocking Friendly's SpawnCheck (and other Friendly blocks)
 
 #TODO
-# Last resort SUICIDE for those completely blocked in Spawn
+# DEBUG THIS --> Last resort SUICIDE for those completely blocked in Spawn
 
-# Suicide, but only if its worth it, bro - Method borrowed from Khal Robo, borrowed from ExSpace
-def HonorableDeath(self, game):
-    # if there are 3+ enemies around, suicide! (code stolen from the ExSpace robot because this is my first day using python)
-    aroundE = 0
-    for loc, bot in game.robots.items():
-        if bot.player_id != self.player_id:
-            if rg.wdist(loc, self.location) <= 1:
-                aroundE += 1
-    if aroundE >= 3 and self.hp < 41:
-        print "kaboom (3+)"
-        self.botSuicide += 1
-        return True
-    # if health is low, suicide for fewer enemies
-    if aroundE == 2 and self.hp < 21:
-        self.botSuicide += 1
-        print "kaboom (2)"
-        return True
+#TODO
+# Print stats summary at end of each turn 99 or end game
 
 # Is enemy in the center?
 def IsCenterAvailable(self,game):
@@ -73,6 +60,24 @@ def FriendlyLocations(self,game):
             friendlyLocs.append(loc)
     #print friendlyLocs
     return friendlyLocs
+
+# Suicide, but only if its worth it, bro - Method borrowed from Khal Robo, borrowed from ExSpace
+def HonorableDeath(self, game):
+    # if there are 3+ enemies around, suicide! (code stolen from the ExSpace robot because this is my first day using python)
+    aroundE = 0
+    for loc, bot in game.robots.items():
+        if bot.player_id != self.player_id:
+            if rg.wdist(loc, self.location) <= 1:
+                aroundE += 1
+    if aroundE >= 3 and self.hp < 41:
+        print "kaboom (3+)"
+        self.botSuicide += 1
+        return True
+    # if health is low, suicide for fewer enemies
+    if aroundE == 2 and self.hp < 21:
+        self.botSuicide += 1
+        print "kaboom (2)"
+        return True
 
 # Run away!!!
 def ItsNotWorthItBro(self,game):
@@ -164,7 +169,10 @@ class Robot:
                 jukeAroundEnemyFromSpawn = rg.toward(self.location,SpinMove(self,rg.toward(self.location, rg.CENTER_POINT)))
                 print "Enemy in the way, trying to juke to ", jukeAroundEnemyFromSpawn
                 if jukeAroundEnemyFromSpawn in self.enemyLocations:
-                    print "GET OFF ME BRO! Boxed in, attacking ", jukeAroundEnemyFromSpawn
+                    print "GET OFF ME BRO! Boxed in, attacking or suiciding", jukeAroundEnemyFromSpawn
+                    if self.hp <= 12:
+                        self.botSuicide += 1
+                        return ['suicide']
                     return ['attack', jukeAroundEnemyFromSpawn]
                 return ['move', jukeAroundEnemyFromSpawn]
             # next, check if move toward center is where a Friendly is standing, SpinMove
@@ -197,7 +205,7 @@ class Robot:
         # StarBot with - 18-8, 18-8| Without 11-4, 17-2
         if rg.wdist(self.location, GetClosestEnemy(self)) == 2:
             #determine most probable move enemy will take toward you
-            print "Predicting enemy will move to  (%d, %d)" %TheForce(self, game, self.location, GetClosestEnemy(self))
+            #print "Predicting enemy will move to  (%d, %d)" %TheForce(self, game, self.location, GetClosestEnemy(self))
             return ['attack', rg.toward(self.location, TheForce(self, game, self.location, GetClosestEnemy(self)))]
 
         #If an enemy is not close, move towards one
