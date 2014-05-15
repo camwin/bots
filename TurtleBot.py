@@ -4,23 +4,29 @@ import rg, random
 # Figure out way to prevent more than one bot from locking up with an enemy. Derive way for
 # bots to gang up effectively.
 
+#TODO
+# DEBUG THIS --> Add check for Friendly's blocking Friendly's SpawnCheck (and other Friendly blocks)
+
+#TODO
+# Last resort SUICIDE for those completely blocked in Spawn
+
 # Suicide, but only if its worth it, bro - Method borrowed from Khal Robo, borrowed from ExSpace
 def HonorableDeath(self, game):
-        # if there are 3+ enemies around, suicide! (code stolen from the ExSpace robot because this is my first day using python)
-        aroundE = 0
-        for loc, bot in game.robots.items():
-            if bot.player_id != self.player_id:
-                if rg.wdist(loc, self.location) <= 1:
-                    aroundE += 1
-        if aroundE >= 3 and self.hp < 41:
-            print "kaboom (3+)"
-            self.botSuicide += 1
-            return True
-        # if health is low, suicide for fewer enemies
-        if aroundE == 2 and self.hp < 21:
-            self.botSuicide += 1
-            print "kaboom (2)"
-            return True
+    # if there are 3+ enemies around, suicide! (code stolen from the ExSpace robot because this is my first day using python)
+    aroundE = 0
+    for loc, bot in game.robots.items():
+        if bot.player_id != self.player_id:
+            if rg.wdist(loc, self.location) <= 1:
+                aroundE += 1
+    if aroundE >= 3 and self.hp < 41:
+        print "kaboom (3+)"
+        self.botSuicide += 1
+        return True
+    # if health is low, suicide for fewer enemies
+    if aroundE == 2 and self.hp < 21:
+        self.botSuicide += 1
+        print "kaboom (2)"
+        return True
 
 # Is enemy in the center?
 def IsCenterAvailable(self,game):
@@ -120,13 +126,13 @@ def TheForce(self,game,myLoc, enemyLoc):
 
 # I love being a turtle!
 def TurtleMode(self,game):
-    for loc,bot in game.robots.items():
-        if bot.player_id == self.player_id:
-            if self.hp < 10:
-                if rg.wdist(loc, GetClosestEnemy(self)) == 1:
-                    if rg.wdist(loc, GetClosestFriendly(self)) > 1:
-                        print "Bot at %d %d entered turtle mode" %self.location
-                        return True
+    #for loc,bot in game.robots.items():
+    #    if bot.player_id == self.player_id:
+    if self.hp < 10:
+        if rg.wdist(self.location, GetClosestEnemy(self)) == 1:
+            if rg.wdist(self.location, GetClosestFriendly(self)) > 1:
+                print "Bot at %d %d entered turtle mode" %self.location
+                return True
 
 class Robot:
 
@@ -156,8 +162,13 @@ class Robot:
             if ['move', rg.toward(self.location, rg.CENTER_POINT)] in self.enemyLocations:
                 print "Don't spawn kill me, bro!"
                 return ['move', SpinMove(rg.toward(self.location, rg.CENTER_POINT))]
+            # next, check if move toward center is where a Friendly is standing, SpinMove
+            if ['move', rg.toward(self.location, rg.CENTER_POINT)] in self.friendlyLocations:
+                print "Don't spawn kill me, bro! (friendly juke)"
+                return ['move', SpinMove(rg.toward(self.location, rg.CENTER_POINT))]
             # if move is clear, just do it, bro
             else:
+                print "Spawn coming up, dipping toward center from (%d, %d)" %self.location
                 return ['move', rg.toward(self.location, rg.CENTER_POINT)]
 
         #If low on health and close to enemy, suicide
