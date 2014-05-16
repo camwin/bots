@@ -84,12 +84,10 @@ def ItsNotWorthItBro(self,game):
     #for loc,bot in game.robots.items():
     #    if bot.player_id == self.player_id:
     if self.hp < 20:
-        if rg.wdist(self.location, GetClosestEnemy(self)) == 1:
-            if rg.wdist(self.location, GetClosestFriendly(self)) > 1:
-                print "Just walk away bro, it's not worth it (%d, %d)" %self.location
-                return True
-    else:
-        return False
+        if rg.wdist(self.location, GetClosestEnemy(self)) <= 2:
+            #if rg.wdist(self.location, GetClosestFriendly(self)) > 2:
+            print "Just walk away bro, it's not worth it (%d, %d)" %self.location
+            return True
 
 # Returns a list of adjacent areas
 def listOfGoodMoves(loc):
@@ -143,6 +141,10 @@ class Robot:
     botSuicide = 0
     def act(self, game):
 
+        #init vars
+        self.game = game
+        
+
         #Create list of enemy locations
         self.enemyLocations = EnemyLocations(self,game)
         self.friendlyLocations = FriendlyLocations(self,game)
@@ -150,7 +152,6 @@ class Robot:
         #Initial vars for closestEnemy/Friend
         self.closestEnemy = (1000, 1000)
         self.closestFriend = (1000, 1000)
-        self.game = game
         #print "Enemy List: " , self.enemyLocations
         #print "Friendly List: " , self.friendlyLocations
 
@@ -194,10 +195,20 @@ class Robot:
             print "Don't hurt me, bro! (%d, %d)" %self.location
             return ['guard']
 
-        #If an enemy is close and it's worth it, bro (you have a buddy close), Attack. Otherwise, waddle away
+        #If an enemy is close, Attack. Otherwise, juke to center
         #print "self.location, GetClosestEnemy", self.location, " ", GetClosestEnemy(self)
-        if rg.wdist(self.location, GetClosestEnemy(self)) == 1: # ItsNotWorthItBro(self,game) == False:
+        if rg.wdist(self.location, GetClosestEnemy(self)) == 1:
+            print "Attacking: ", GetClosestEnemy(self)
             return ['attack', GetClosestEnemy(self)]
+        if ItsNotWorthItBro(self,game):
+            if rg.toward(self.location, rg.CENTER_POINT) in self.friendlyLocations:
+                jukeAroundFriendly = rg.toward(self.location,SpinMove(self,rg.toward(self.location, rg.CENTER_POINT)))
+                print "Friendly in the way of escape to center, trying to juke to ", jukeAroundFriendly
+                return ['move', jukeAroundFriendly]
+            if rg.toward(self.location, rg.CENTER_POINT) in self.enemyLocations:
+                jukeAroundEnemy = rg.toward(self.location,SpinMove(rg.toward(self.location, rg.CENTER_POINT)))
+                print "Enemy in the way of escape to center, trying to juke to ", jukeAroundEnemy
+                return ['move', jukeAroundEnemy]
 
         # Get 1 square away from enemy, then attack square that enemy may move to.
         # Determine if enemy is 2 paces away (i.e., one pace before striking distance)
@@ -220,5 +231,5 @@ class Robot:
                 print "Friendly in the way, SpinMove around him at (%d, %d)" %rg.toward(self.location, GetClosestEnemy(self))
                 return ['move', rg.toward(self.location,SpinMove(self,rg.toward(self.location, GetClosestEnemy(self))))]
                 #old return ['move', rg.toward(self.location, rg.CENTER_POINT)]
-        print "Nothing to do, guarding"
+        print "Nothing to do, guarding at ", self.location
         return ['guard']
