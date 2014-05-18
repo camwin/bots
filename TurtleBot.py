@@ -83,7 +83,7 @@ def HonorableDeath(self, game):
 def ItsNotWorthItBro(self,game):
     #for loc,bot in game.robots.items():
     #    if bot.player_id == self.player_id:
-    if self.hp < 20:
+    if self.hp <= 15:
         if rg.wdist(self.location, GetClosestEnemy(self)) <= 2:
             #if rg.wdist(self.location, GetClosestFriendly(self)) > 2:
             print "Just walk away bro, it's not worth it (%d, %d)" %self.location
@@ -102,7 +102,7 @@ def SuicideStats(self,stat):
 
 #Check to see if bot is in spawn and spawn-turn coming up.
 def SpawnKillCheck(self,game):
-    if game.turn % 10 in [8, 9, 0] and 'spawn' in rg.loc_types(self.location) and game.turn < 95:
+    if game.turn % 10 in [7, 8, 9, 0] and 'spawn' in rg.loc_types(self.location):
         return True
 
 # Method that converts a bad move into a good one (think spin-move around defender in football/basketball)
@@ -130,7 +130,7 @@ def TheForce(self,game,myLoc, enemyLoc):
 def TurtleMode(self,game):
     #for loc,bot in game.robots.items():
     #    if bot.player_id == self.player_id:
-    if self.hp < 10:
+    if self.hp <= 15:
         if rg.wdist(self.location, GetClosestEnemy(self)) == 1:
             if rg.wdist(self.location, GetClosestFriendly(self)) > 1:
                 print "Bot at %d %d entered turtle mode" %self.location
@@ -143,7 +143,7 @@ class Robot:
 
         #init vars
         self.game = game
-        
+
 
         #Create list of enemy locations
         self.enemyLocations = EnemyLocations(self,game)
@@ -175,25 +175,25 @@ class Robot:
                         self.botSuicide += 1
                         return ['suicide']
                     return ['attack', jukeAroundEnemyFromSpawn]
-                return ['move', jukeAroundEnemyFromSpawn]
+                return ['move', rg.toward(self.location,jukeAroundEnemyFromSpawn)]
             # next, check if move toward center is where a Friendly is standing, SpinMove
             if rg.toward(self.location, rg.CENTER_POINT) in self.friendlyLocations:
                 jukeAroundFriendlyFromSpawn = rg.toward(self.location,SpinMove(self,rg.toward(self.location, rg.CENTER_POINT)))
                 print "Friendly in the way, trying to juke to ", jukeAroundFriendlyFromSpawn
-                return ['move', jukeAroundFriendlyFromSpawn]
-            # if move is clear, just do it, bro
-            else:
-                print "Spawn coming up, dipping toward center from (%d, %d)" %self.location
-                return ['move', rg.toward(self.location, rg.CENTER_POINT)]
+                return ['move', rg.toward(self.location,jukeAroundFriendlyFromSpawn)]
+
+            # if move is clear, just do it
+            print "Spawn coming up, dipping toward center from (%d, %d)" %self.location
+            return ['move', rg.toward(self.location, rg.CENTER_POINT)]
 
         #If low on health and close to enemy, suicide
         if HonorableDeath(self, game):
             return ['suicide']
 
         # if no buddy is near and health is below 10 (changed from 15 5-14-14), go to guarding
-        if TurtleMode(self,game):
-            print "Don't hurt me, bro! (%d, %d)" %self.location
-            return ['guard']
+        #if TurtleMode(self,game):
+        #    print "Don't hurt me, bro! (%d, %d)" %self.location
+        #    return ['guard']
 
         #If an enemy is close, Attack. Otherwise, juke to center
         #print "self.location, GetClosestEnemy", self.location, " ", GetClosestEnemy(self)
